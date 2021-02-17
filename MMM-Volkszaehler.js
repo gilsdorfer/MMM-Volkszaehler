@@ -129,7 +129,7 @@ Module.register("MMM-Volkszaehler", {
 			 var date =new Date(tuples[i][0]);
 			 dates.push(date.getDate()+"."+("0" + (date.getMonth() + 1)).slice(-2));
 			}
-
+//test
 			
 			
 			
