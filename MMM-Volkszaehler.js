@@ -19,6 +19,8 @@ Module.register("MMM-Volkszaehler", {
 		var self = this;
 		var dataRequest = null;
 		var dataNotification = null;
+		var all = null;
+		var jsonbody = null;
 
 		//Flag for check if module is loaded
 		this.loaded = false;
@@ -39,7 +41,7 @@ Module.register("MMM-Volkszaehler", {
 	getData: function() {
 		var self = this;
 
-		var urlApi = "http://stromzaehler/middleware/data/3594ee50-087f-11eb-ba5a-77ef154c9d83.json?from=now";
+		var urlApi = "http://stromzaehler/middleware/data/3594ee50-087f-11eb-ba5a-77ef154c9d83.json?from=7+days+ago&to=now&group=day";
 		var retry = true;
 
 		var dataRequest = new XMLHttpRequest();
@@ -63,8 +65,31 @@ Module.register("MMM-Volkszaehler", {
 			}
 		};
 		dataRequest.send();
-	},
-
+	}, 
+	/*getData: function() {
+		
+		var theUrl="http://stromzaehler/middleware/data/3594ee50-087f-11eb-ba5a-77ef154c9d83.json?from=7+days+ago&to=now&group=day"
+		var dataRequest = new XMLHttpRequest();
+		dataRequest.open( "GET", theUrl, false ); // false for synchronous request
+		dataRequest.send( null );
+		var dataObj=JSON.parse(dataRequest.responseText);
+		var tuples = dataObj.data.tuples;
+		var values = [];
+		var dates = [];
+		for(i=0; i<6;i++)
+		{
+		 values.push(tuples[i][1]*24);
+		 var date =new Date(tuples[i][0]);
+		 dates.push(date.getDate()+"."+("0" + (date.getMonth() + 1)).slice(-2));
+		}
+		
+		//alert(dataObj.data.average); 
+		//var dataerik = [12, 13, 3, 5, 2, 3];
+		var all = [dates,values];
+		return all;
+			
+			
+		}, */
 
 	/* scheduleUpdate()
 	 * Schedule next update.
@@ -91,15 +116,54 @@ Module.register("MMM-Volkszaehler", {
 		var wrapper = document.createElement("div");
 		// If this.dataRequest is not empty
 		if (this.dataRequest) {
-			var wrapperDataRequest = document.createElement("div");
+			var wrapperDataRequest = document.createElement("canvas");
+
+
+			var tuples = this.jsonbody.data.tuples;
+			
+			var values = [];
+			var dates = [];
+			for(i=0; i<tuples.length;i++)
+			{
+			 values.push(tuples[i][1]*24);
+			 var date =new Date(tuples[i][0]);
+			 dates.push(date.getDate()+"."+("0" + (date.getMonth() + 1)).slice(-2));
+			}
+
+			
+			
+			
 			// check format https://jsonplaceholder.typicode.com/posts/1
-			wrapperDataRequest.innerHTML = this.dataRequest.data.average;
+			//wrapperDataRequest.innerHTML = this.dataRequest.data.average;
+			var myChart = new Chart(wrapperDataRequest, {
+				type: 'bar',
+				data: {
+					labels: dates,
+					datasets: [{
+						data: values,
+						backgroundColor: 'rgba(255, 255, 255, 0.5)',
+						borderWidth: 1
+					}]
+				},
+				options: {
+					scales: {
+						yAxes: [{
+							ticks: {
+								beginAtZero: true
+							}
+						}]
+					},
+					legend: {
+						display: false,
+					}
+				}
+			});
 
 			var labelDataRequest = document.createElement("label");
 			// Use translate function
 			//             this id defined in translations files
-			labelDataRequest.innerHTML = this.translate("Aktuelle Solarleistung [W]");
-
+			labelDataRequest.innerHTML = this.translate("PV-Leistung letzte 7 Tage [W]");
+          
 
 			wrapper.appendChild(labelDataRequest);
 			wrapper.appendChild(wrapperDataRequest);
@@ -117,7 +181,13 @@ Module.register("MMM-Volkszaehler", {
 	},
 
 	getScripts: function() {
-		return [];
+		return [
+
+
+			'modules/MMM-Volkszaehler/node_modules/chart.js/dist/Chart.bundle.js',
+			'moment.js'
+
+		];
 	},
 
 	getStyles: function () {
@@ -138,6 +208,7 @@ Module.register("MMM-Volkszaehler", {
 	processData: function(data) {
 		var self = this;
 		this.dataRequest = data;
+		this.jsonbody = data;
 		if (this.loaded === false) { self.updateDom(self.config.animationSpeed) ; }
 		this.loaded = true;
 
@@ -145,7 +216,7 @@ Module.register("MMM-Volkszaehler", {
 		// send notification to helper
 		this.sendSocketNotification("MMM-Volkszaehler-NOTIFICATION_TEST", data);
 	},
-
+    
 	// socketNotificationReceived from helper
 	socketNotificationReceived: function (notification, payload) {
 		if(notification === "MMM-Volkszaehler-NOTIFICATION_TEST") {
