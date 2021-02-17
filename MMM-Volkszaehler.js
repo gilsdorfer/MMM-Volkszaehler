@@ -36,7 +36,6 @@ Module.register("MMM-Volkszaehler", {
 	 * getData
 	 * function example return data and show it in the module wrapper
 	 * get a URL request
-	 *
 	 */
 	getData: function() {
 		var self = this;
